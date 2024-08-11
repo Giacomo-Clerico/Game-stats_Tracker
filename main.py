@@ -2,7 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 
-global user__name
+user__name = "admin"
+game__name = "generalGame"
 
 conn = sqlite3.connect('game_stats.db')
 cursor = conn.cursor()
@@ -26,12 +27,20 @@ def connect_db():
 def add_user(name):
     conn = connect_db()
     cursor = conn.cursor()
+    tableName = name + "Games"
     cursor.execute("INSERT INTO users (name) VALUES (?)", (name,))
+    cursor.execute("CREATE TABLE IF NOT EXISTS "+tableName+'''(
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL
+    )''')
     conn.commit()
     conn.close()
 
+def add_game(name):
+    ###to be added
 
-# Fetch usernames from the database
+
+#Fetch usernames from the database
 def fetch_names():
     conn = connect_db()
     cursor = conn.cursor()
@@ -39,6 +48,16 @@ def fetch_names():
     names = [row[0] for row in cursor.fetchall()]
     conn.close()
     return names
+
+def fetch_games():
+    conn = connect_db()
+    cursor = conn.cursor()
+    tableName = user__name + "Games"
+    cursor.execute("SELECT name FROM " + tableName)
+    games = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return games
+
 
 
 # Main Application
@@ -94,26 +113,80 @@ class UserListPage(tk.Frame):
     def add_user(self):
         user_name = self.new_user_entry.get()
         if user_name:  # Check if the entry is not empty
+            global user__name 
+            user__name = user_name
+
             add_user(user_name)
             self.new_user_entry.delete(0, tk.END)
             self.listbox.insert(tk.END, user_name)
             self.master.switch_frame(UserPage)
-            user__name = user_name
+            
+
+   
+
+
+
 
     def select_user(self):
         selected_name = self.listbox.get(tk.ACTIVE)
         if selected_name:
-            self.master.switch_frame(UserPage)
+            global user__name 
             user__name = selected_name
+            self.master.switch_frame(UserPage)
 
 
-# Page 2: Next Page After Selection or Addition
+
+# Page 2: Next Page After User Selection or Addition
 class UserPage(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
 
-        label = ttk.Label(self, text="Next Page", font=('Helvetica', 16))
+        label = ttk.Label(self, text="Select game", font=('Helvetica', 16))
         label.pack(pady=10)
+
+        # Listbox to display game names
+        self.listbox = tk.Listbox(self, height=10, width=30)
+        self.listbox.pack(pady=10)
+        self.populate_listbox()
+
+        # Entry box to add a new game
+        self.new_user_entry = tk.Entry(self, width=25)
+        self.new_user_entry.pack(pady=10)
+
+        # Button to add a new game
+        add_button = ttk.Button(self, text="Add Game", command=self.add_game)
+        add_button.pack(pady=10)
+
+        # Button to select a game and go to the next page
+        select_button = ttk.Button(self, text="Select Game", command=self.select_game)
+        select_button.pack(pady=10)
+
+    def populate_listbox(self):
+        games = fetch_games()
+        for game in games:
+            self.listbox.insert(tk.END, game)
+
+
+    def select_game(self):
+        selected_game = self.listbox.get(tk.ACTIVE)
+        if selected_name:
+            global game__name
+            game__name = selected_game
+            self.master.switch_frame(GamePage)
+
+
+
+
+
+    def add_game(self):
+        game_name = self.new_user_entry.get()
+        if game_name:  # Check if the entry is not empty
+            add_game(game_name)
+            global game__name
+            game__name = game_name
+            self.new_user_entry.delete(0, tk.END)
+            self.listbox.insert(tk.END, user_name)
+            self.master.switch_frame(GamePage)
 
 
 

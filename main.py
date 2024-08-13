@@ -43,17 +43,62 @@ def add_user(name):
     conn.close()
 
 
+def fieldAdder(keys, sql_definitions):
+    # Create an empty list to store the corresponding SQL columns
+    columns_list = []
+    message = ""
+
+    for key in keys:
+        # Get the corresponding SQL column definition from the sql_definitions dictionary
+        column_definition = sql_definitions.get(key)
+        if column_definition:
+            columns_list.append(column_definition)
+        
+    message = ",\n\t".join(columns_list)
+    # for i in columns_list:
+    #     message += i + ",\n\t"
+
+    # debug output
+    # print(message)
+    return message
+
+
+# modify this to add/modify the different fields that can go into the table
+sql_definitions = {
+    'Character': 'character TEXT NOT NULL',
+    'Damage': 'damage INTEGER NOT NULL',
+    'Deaths': 'deaths INTEGER'
+}
+
+
 def add_game(fields):
     conn = connect_db()
     cursor = conn.cursor()
     userGameTableName = user__name + "Games"
 
     tableName = user__name + game__name
-    cursor.execute("INSERT INTO "+ userGameTableName + " (name) VALUES (?)", (game__name,))
+    # add the game name to the table that tracks the games for a specific user
+
+    cursor.execute(
+        "INSERT INTO " + userGameTableName + " (name) VALUES (?)", (game__name,)
+    )
+
+    # create the game table for the game
+    fieldsForQuery = fieldAdder(fields, sql_definitions)
+    tableQuery = f"""CREATE TABLE {tableName} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        {fieldsForQuery} );
+    """
+    # debug query
+    # print(tableQuery)
+    cursor.execute(tableQuery)
     conn.commit()
     conn.close()
 
+
 # Fetch usernames from the database
+
+
 def fetch_names():
     conn = connect_db()
     cursor = conn.cursor()
@@ -182,7 +227,6 @@ class UserPage(tk.Frame):
     def add_game(self):
         game_name = self.new_user_entry.get()
         if game_name:  # Check if the entry is not empty
-            add_game(game_name)
             global game__name
             game__name = game_name
             self.new_user_entry.delete(0, tk.END)
@@ -199,7 +243,7 @@ class CreateGamePage(tk.Frame):
         # Button to add the game
         # add_button = ttk.Button(self, text="Create Game", command=add_game(game__name))
         # add_button.pack(pady=10)
-        
+
         self.checkbox_labels = []  # Store the labels of the checkboxes
         self.checkbox_vars = []
 
@@ -208,7 +252,14 @@ class CreateGamePage(tk.Frame):
 
     def create_widgets(self):
         # Options for checkboxes
-        options = ["Character", "Damage", "Kills", "Deaths", "Positioning", "Won",]
+        options = [
+            "Character",
+            "Damage",
+            "Kills",
+            "Deaths",
+            "Positioning",
+            "Won",
+        ]
 
         # Create checkboxes within the CreateGamePage frame
         for option in options:
@@ -225,8 +276,13 @@ class CreateGamePage(tk.Frame):
         check_button.pack()
 
     def check_selected(self):
-        selected = [label for var, label in zip(self.checkbox_vars, self.checkbox_labels) if var.get()]
-        # print("Selected Checkboxes:", selected) debug checkbox output
+        selected = [
+            label
+            for var, label in zip(self.checkbox_vars, self.checkbox_labels)
+            if var.get()
+        ]
+        # debug checkbox output
+        # print("Selected Checkboxes:", selected)
         add_game(selected)
 
 

@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 import sqlite3
+import json
+
 
 user__name = "admin"
 game__name = "generalGame"
@@ -43,6 +45,14 @@ def add_user(name):
     conn.close()
 
 
+# Load the JSON file
+with open('fields.json', 'r') as file:
+    fields = json.load(file)
+
+# Extract the 'name' list (keys of the JSON)
+names_list = list(fields.keys())
+
+
 def fieldAdder(keys, sql_definitions):
     # Create an empty list to store the corresponding SQL columns
     columns_list = []
@@ -53,7 +63,7 @@ def fieldAdder(keys, sql_definitions):
         column_definition = sql_definitions.get(key)
         if column_definition:
             columns_list.append(column_definition)
-        
+
     message = ",\n\t".join(columns_list)
     # for i in columns_list:
     #     message += i + ",\n\t"
@@ -63,12 +73,8 @@ def fieldAdder(keys, sql_definitions):
     return message
 
 
-# modify this to add/modify the different fields that can go into the table
-sql_definitions = {
-    'Character': 'character TEXT NOT NULL',
-    'Damage': 'damage INTEGER NOT NULL',
-    'Deaths': 'deaths INTEGER'
-}
+# Optionally, create a list of 'name sql_description' strings
+sql_definitions = fields
 
 
 def add_game(fields):
@@ -252,14 +258,7 @@ class CreateGamePage(tk.Frame):
 
     def create_widgets(self):
         # Options for checkboxes
-        options = [
-            "Character",
-            "Damage",
-            "Kills",
-            "Deaths",
-            "Positioning",
-            "Won",
-        ]
+        options = names_list
 
         # Create checkboxes within the CreateGamePage frame
         for option in options:

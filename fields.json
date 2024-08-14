@@ -1,0 +1,9 @@
+{
+    "Character": "TEXT NOT NULL",
+    "Damage": "INTEGER NOT NULL",
+    "Deaths": "INTEGER",
+    "Kills": "INTEGER",
+    "Won": "INTEGER",
+    "Position": "INTEGER"
+}
+

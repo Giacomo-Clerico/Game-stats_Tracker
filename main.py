@@ -86,7 +86,8 @@ def add_game(fields):
     # add the game name to the table that tracks the games for a specific user
 
     cursor.execute(
-        "INSERT INTO " + userGameTableName + " (name) VALUES (?)", (game__name,)
+        "INSERT INTO " + userGameTableName +
+        " (name) VALUES (?)", (game__name,)
     )
 
     # create the game table for the game
@@ -142,6 +143,13 @@ class MainApp(tk.Tk):
         self.current_frame = new_frame
         self.current_frame.pack()
 
+    def switch_frameEntry(self, frame_class):
+        new_frame = frame_class(self)
+        if self.current_frame is not None:
+            self.current_frame.destroy()
+        self.current_frame = new_frame
+        self.current_frame.pack(fill=tk.BOTH, expand=True)
+
 
 # Page 1: List of Users and Add User Entry
 class UserListPage(tk.Frame):
@@ -166,7 +174,8 @@ class UserListPage(tk.Frame):
         add_button.pack(pady=10)
 
         # Button to select a user and go to the next page
-        select_button = ttk.Button(self, text="Select User", command=self.select_user)
+        select_button = ttk.Button(
+            self, text="Select User", command=self.select_user)
         select_button.pack(pady=10)
 
     def populate_listbox(self):
@@ -215,7 +224,8 @@ class UserPage(tk.Frame):
         add_button.pack(pady=10)
 
         # Button to select a game and go to the next page
-        select_button = ttk.Button(self, text="Select Game", command=self.select_game)
+        select_button = ttk.Button(
+            self, text="Select Game", command=self.select_game)
         select_button.pack(pady=10)
 
     def populate_listbox(self):
@@ -228,7 +238,7 @@ class UserPage(tk.Frame):
         if selected_game:
             global game__name
             game__name = selected_game
-            self.master.switch_frame(GamePage)
+            self.master.switch_frameEntry(GamePage)
 
     def add_game(self):
         game_name = self.new_user_entry.get()
@@ -243,12 +253,9 @@ class CreateGamePage(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
 
-        label = ttk.Label(self, text="Create a new game", font=("Helvetica", 16))
+        label = ttk.Label(self, text="Create a new game",
+                          font=("Helvetica", 16))
         label.pack(pady=10)
-
-        # Button to add the game
-        # add_button = ttk.Button(self, text="Create Game", command=add_game(game__name))
-        # add_button.pack(pady=10)
 
         self.checkbox_labels = []  # Store the labels of the checkboxes
         self.checkbox_vars = []
@@ -283,14 +290,46 @@ class CreateGamePage(tk.Frame):
         # debug checkbox output
         # print("Selected Checkboxes:", selected)
         add_game(selected)
+        self.master.switch_frameEntry(GamePage)
 
 
 class GamePage(tk.Frame):
     def __init__(self, master):
-        print("game stats here")
+        super().__init__(master)
+        columns = ['Name', 'Age', 'Email']
+        self.columns = columns
+        self.entries = {}
+
+        label = ttk.Label(self, text="Add an entry",
+                          font=("Helvetica", 16))
+        label.pack(pady=10)
+
+        self.create_entries()
+
+    def create_entries(self):
+        # Define starting coordinates
+        x_position = 10
+        y_position = 40
+
+        for column_name in self.columns:
+            # Create and place a Label
+            label = tk.Label(self, text=column_name)
+            label.place(x=x_position, y=y_position)
+
+            # Create and place an Entry widget next to the Label
+            entry = tk.Entry(self)
+            entry.place(x=x_position + 100, y=y_position)
+
+            # Store the Entry widget in the dictionary
+            self.entries[column_name] = entry
+
+            # Update y_position for the next row
+            y_position += 30
 
 
 # Run the application
 if __name__ == "__main__":
     app = MainApp()
+    # page = GamePage()
+    # page.pack(fill=tk.BOTH, expand=True)
     app.mainloop()

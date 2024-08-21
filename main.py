@@ -60,13 +60,12 @@ def fieldAdder(keys, sql_definitions):
 
     for key in keys:
         # Get the corresponding SQL column definition from the sql_definitions dictionary
-        column_definition = sql_definitions.get(key)
+        # column_definition = sql_definitions.get(key)
+        column_definition = fields.get(key) # only getting gield, not the name
         if column_definition:
             columns_list.append(column_definition)
 
-    message = ",\n\t".join(columns_list)
-    # for i in columns_list:
-    #     message += i + ",\n\t"
+    message = ",\n\t".join([str(item) for item in columns_list])
 
     # debug output
     # print(message)
@@ -97,8 +96,8 @@ def add_game(fields):
         {fieldsForQuery} );
     """
     # debug query
-    # print(tableQuery)
-    cursor.execute(tableQuery)
+    print(tableQuery)
+    # cursor.execute(tableQuery)
     conn.commit()
     conn.close()
 
@@ -123,6 +122,25 @@ def fetch_games():
     games = [row[0] for row in cursor.fetchall()]
     conn.close()
     return games
+
+
+def fetch_columns():
+    conn = connect_db()
+    tableName = user__name + game__name
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM " + tableName)
+    
+    # row = cursor.fetchone()
+    # names = row.keys()
+    
+    names = cursor.description
+    for row in names:
+        print(row[0])
+
+    # names = [description[0] for description in cursor.description]
+    # debug column output
+    print(names)
+    # return names
 
 
 # Main Application
@@ -304,6 +322,8 @@ class GamePage(tk.Frame):
                           font=("Helvetica", 16))
         label.pack(pady=10)
 
+        # fetch_columns()
+
         self.create_entries()
 
     def create_entries(self):
@@ -330,6 +350,4 @@ class GamePage(tk.Frame):
 # Run the application
 if __name__ == "__main__":
     app = MainApp()
-    # page = GamePage()
-    # page.pack(fill=tk.BOTH, expand=True)
     app.mainloop()

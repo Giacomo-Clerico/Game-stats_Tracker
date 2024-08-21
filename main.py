@@ -46,7 +46,7 @@ def add_user(name):
 
 
 # Load the JSON file
-with open('fields.json', 'r') as file:
+with open("fields.json", "r") as file:
     fields = json.load(file)
 
 # Extract the 'name' list (keys of the JSON)
@@ -60,10 +60,10 @@ def fieldAdder(keys, sql_definitions):
 
     for key in keys:
         # Get the corresponding SQL column definition from the sql_definitions dictionary
-        # column_definition = sql_definitions.get(key)
-        column_definition = fields.get(key) # only getting gield, not the name
+        column_definition = sql_definitions.get(key)
         if column_definition:
-            columns_list.append(column_definition)
+            # Append the key (field name) and its definition as a tuple to the list
+            columns_list.append(f"{key} {column_definition}")
 
     message = ",\n\t".join([str(item) for item in columns_list])
 
@@ -92,19 +92,18 @@ def add_game(fields):
     # create the game table for the game
     fieldsForQuery = fieldAdder(fields, sql_definitions)
     tableQuery = f"""CREATE TABLE {tableName} (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        {fieldsForQuery} );
+        sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        {fieldsForQuery}
+        );
     """
     # debug query
-    print(tableQuery)
-    # cursor.execute(tableQuery)
+    # print(tableQuery)
+    cursor.execute(tableQuery)
     conn.commit()
     conn.close()
 
 
 # Fetch usernames from the database
-
-
 def fetch_names():
     conn = connect_db()
     cursor = conn.cursor()
@@ -129,18 +128,12 @@ def fetch_columns():
     tableName = user__name + game__name
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM " + tableName)
-    
-    # row = cursor.fetchone()
-    # names = row.keys()
-    
-    names = cursor.description
-    for row in names:
-        print(row[0])
 
-    # names = [description[0] for description in cursor.description]
+    names = [description[0] for description in cursor.description]
+    names = names[1:]
     # debug column output
-    print(names)
-    # return names
+    # print(names)
+    return names
 
 
 # Main Application
@@ -314,15 +307,12 @@ class CreateGamePage(tk.Frame):
 class GamePage(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
-        columns = ['Name', 'Age', 'Email']
+        columns = fetch_columns()
         self.columns = columns
         self.entries = {}
 
-        label = ttk.Label(self, text="Add an entry",
-                          font=("Helvetica", 16))
+        label = ttk.Label(self, text="Add an entry", font=("Helvetica", 16))
         label.pack(pady=10)
-
-        # fetch_columns()
 
         self.create_entries()
 
@@ -345,6 +335,18 @@ class GamePage(tk.Frame):
 
             # Update y_position for the next row
             y_position += 30
+
+        # Button to check which checkboxes are selected
+        check_button = tk.Button(
+            self, text="Check Selected", command=self.insert_data)
+        check_button.place(y=y_position)
+        check_button.pack()
+
+    def check_selected(self):
+        print('not working')
+
+    def insert_data(self):
+        self.check_selected()
 
 
 # Run the application

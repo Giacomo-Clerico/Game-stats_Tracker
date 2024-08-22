@@ -9,6 +9,7 @@ game__name = "generalGame"
 
 conn = sqlite3.connect("game_stats.db")
 cursor = conn.cursor()
+
 # Create the users table
 cursor.execute(
     """
@@ -134,6 +135,22 @@ def fetch_columns():
     # debug column output
     # print(names)
     return names
+
+
+def insert_query(labels, values):
+    conn = connect_db()
+    cursor = conn.cursor()
+
+    tableName = user__name + game__name
+
+    labels_str = ', '.join(labels)
+    placeholder_str = ', '.join(['?' for _ in values])
+
+    sql_query = f"INSERT INTO {tableName} ({labels_str}) VALUES ({placeholder_str})"
+    cursor.execute(sql_query, values)
+
+    conn.commit()
+    conn.close()
 
 
 # Main Application
@@ -336,17 +353,40 @@ class GamePage(tk.Frame):
             # Update y_position for the next row
             y_position += 30
 
-        # Button to check which checkboxes are selected
+        # Button to check if data is present and insert it
         check_button = tk.Button(
-            self, text="Check Selected", command=self.insert_data)
-        check_button.place(y=y_position)
-        check_button.pack()
-
-    def check_selected(self):
-        print('not working')
+            self, text="insert data", command=self.insert_data)
+        check_button.place(x=100, y=y_position + 5)
 
     def insert_data(self):
-        self.check_selected()
+        labels = []
+        values = []
+
+        for column_name, entry_widget in self.entries.items():
+            labels.append(column_name)
+            if entry_widget.get():
+                # inserts into list only if not null, so that when the lenghts are compared empty fields can be detected
+                values.append(entry_widget.get())
+
+        # Debug lists
+        # print("Labels:", labels)
+        # print("Values:", values)
+
+        # prepare data
+        new_values = [
+            int(value) if value.isdigit() else 1 if value == "true" else 0 if value == "false" else value
+            for value in values
+        ]
+
+        # Debug insertion ready lists
+        # print("Labels:", labels)
+        print("Insertion ready Values:", new_values)
+
+        # checks the lenght of the lists to detect empty fields
+        if len(new_values) == len(labels):
+            insert_query(labels, values)
+        else:
+            print("not all values are inserted")
 
 
 # Run the application

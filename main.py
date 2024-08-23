@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import sqlite3
 import json
+import matplotlib.pyplot as plt
 
 
 user__name = "admin"
@@ -143,14 +144,58 @@ def insert_query(labels, values):
 
     tableName = user__name + game__name
 
-    labels_str = ', '.join(labels)
-    placeholder_str = ', '.join(['?' for _ in values])
+    labels_str = ", ".join(labels)
+    placeholder_str = ", ".join(["?" for _ in values])
 
     sql_query = f"INSERT INTO {tableName} ({labels_str}) VALUES ({placeholder_str})"
     cursor.execute(sql_query, values)
 
     conn.commit()
     conn.close()
+
+
+def fetch_buttons():
+    with open("graphs.json", "r") as file:
+        buttons = json.load(file)
+
+    return buttons
+    # debug
+    # print(buttons)
+
+
+def create_graph(args):
+    # print(args)
+    data = fetch_graph_data(args)
+    make_graph(data, args)
+
+
+def fetch_graph_data(args):
+    conn = connect_db()
+    cursor = conn.cursor()
+
+    tableName = user__name + game__name
+    data = {}
+    for arg in args:
+        query = f"SELECT {arg} FROM {tableName}"
+        # debug query
+        print(query)
+        cursor.execute(query)
+        result = cursor.fetchall()
+        data[arg] = [row[0] for row in result]
+
+    conn.close()
+    # debug data
+    print(data)
+    return data
+
+
+def make_graph(data, args):
+    plt.figure(figsize=(8, 6))
+    plt.plot(data[args[0]], data[args[1]], marker='o', linestyle='none', color='blue')
+    plt.xlabel(args[0])
+    plt.ylabel(args[1])
+    plt.title('')
+    plt.show()
 
 
 # Main Application
@@ -358,6 +403,10 @@ class GamePage(tk.Frame):
             self, text="insert data", command=self.insert_data)
         check_button.place(x=100, y=y_position + 5)
 
+        # button to see graphs page
+        graph_button = tk.Button(self, text="see graphs", command=self.switch)
+        graph_button.place(x=100, y=y_position + 45)
+
     def insert_data(self):
         labels = []
         values = []
@@ -374,7 +423,11 @@ class GamePage(tk.Frame):
 
         # prepare data
         new_values = [
-            int(value) if value.isdigit() else 1 if value == "true" else 0 if value == "false" else value
+            (
+                int(value)
+                if value.isdigit()
+                else 1 if value == "true" else 0 if value == "false" else value
+            )
             for value in values
         ]
 
@@ -387,6 +440,36 @@ class GamePage(tk.Frame):
             insert_query(labels, values)
         else:
             print("not all values are inserted")
+
+    def switch(self):
+        self.master.switch_frame(GraphSelectPage)
+
+
+class GraphSelectPage(tk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+
+        label = ttk.Label(self, text="Select graph", font=("Helvetica", 16))
+        label.pack(pady=10)
+
+        self.create_buttons()
+
+    def create_buttons(self):
+        # Define starting coordinates
+        buttons = fetch_buttons()
+        for button_name, args in buttons.items():
+            button = tk.Button(self, text=button_name,
+                               command=lambda a=args: self.button_function(a))
+            button.pack(pady=10)
+
+        back_button = tk.Button(self, text="back", command=self.switch)
+        back_button.pack(pady=10)
+
+    def button_function(self, args):
+        create_graph(args)
+
+    def switch(self):
+        self.master.switch_frameEntry(GamePage)
 
 
 # Run the application

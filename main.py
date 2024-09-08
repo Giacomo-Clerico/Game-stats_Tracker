@@ -4,7 +4,7 @@ import sqlite3
 import json
 import matplotlib.pyplot as plt
 
-
+# the names of the user and game are loaded later.
 user__name = "admin"
 game__name = "generalGame"
 
@@ -29,12 +29,17 @@ def connect_db():
     conn = sqlite3.connect("game_stats.db")
     return conn
 
-
+# function to add a user to the list
 def add_user(name):
     conn = connect_db()
     cursor = conn.cursor()
-    tableName = name + "Games"
+
+    # adds user to users list
     cursor.execute("INSERT INTO users (name) VALUES (?)", (name,))
+    
+    # creates a list of games for that user
+    # name for the table
+    tableName = name + "Games"
     cursor.execute(
         "CREATE TABLE IF NOT EXISTS "
         + tableName
@@ -47,14 +52,17 @@ def add_user(name):
     conn.close()
 
 
-# Load the JSON file
+# Load the JSON file for the fields
 with open("fields.json", "r") as file:
     fields = json.load(file)
 
 # Extract the 'name' list (keys of the JSON)
 names_list = list(fields.keys())
 
+sql_definitions = fields
 
+
+# function that returns the names of the possible fields for creating a game table
 def fieldAdder(keys, sql_definitions):
     # Create an empty list to store the corresponding SQL columns
     columns_list = []
@@ -71,33 +79,34 @@ def fieldAdder(keys, sql_definitions):
 
     # debug output
     # print(message)
+
     return message
 
 
-# Optionally, create a list of 'name sql_description' strings
-sql_definitions = fields
-
-
+# function to add a game table
 def add_game(fields):
     conn = connect_db()
     cursor = conn.cursor()
+    # name of the table that contains the list of games for an user
     userGameTableName = user__name + "Games"
 
+    # name of the table that contains the game data
     tableName = user__name + game__name
-    # add the game name to the table that tracks the games for a specific user
 
+    # add the game name to the table that tracks the games for an user
     cursor.execute(
         "INSERT INTO " + userGameTableName +
         " (name) VALUES (?)", (game__name,)
     )
 
-    # create the game table for the game
+    # create the table for the game data
     fieldsForQuery = fieldAdder(fields, sql_definitions)
     tableQuery = f"""CREATE TABLE {tableName} (
         sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
         {fieldsForQuery}
         );
     """
+
     # debug query
     # print(tableQuery)
     cursor.execute(tableQuery)
@@ -115,9 +124,12 @@ def fetch_names():
     return names
 
 
+# fetch games for an user
 def fetch_games():
     conn = connect_db()
     cursor = conn.cursor()
+
+    # name of the table that contains the list of games of an user
     tableName = user__name + "Games"
     cursor.execute("SELECT name FROM " + tableName)
     games = [row[0] for row in cursor.fetchall()]
@@ -125,8 +137,11 @@ def fetch_games():
     return games
 
 
+# fetch the column names from a table containing game data, to then load fields for insertion
 def fetch_columns():
     conn = connect_db()
+
+    # name of the table
     tableName = user__name + game__name
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM " + tableName)
@@ -137,11 +152,12 @@ def fetch_columns():
     # print(names)
     return names
 
-
+# query for the insertion of data
 def insert_query(labels, values):
     conn = connect_db()
     cursor = conn.cursor()
 
+    # name of the table
     tableName = user__name + game__name
 
     labels_str = ", ".join(labels)
@@ -154,6 +170,7 @@ def insert_query(labels, values):
     conn.close()
 
 
+# function that returns the name of the graphs that could be created
 def fetch_buttons():
     with open("graphs.json", "r") as file:
         buttons = json.load(file)
@@ -163,12 +180,14 @@ def fetch_buttons():
     # print(buttons)
 
 
+# function that fetches data for graph creation
 def create_graph(args):
     # print(args)
     data = fetch_graph_data(args)
     make_graph(data, args)
 
 
+# function to fetch the data to put in the graph
 def fetch_graph_data(args):
     conn = connect_db()
     cursor = conn.cursor()
@@ -185,10 +204,11 @@ def fetch_graph_data(args):
 
     conn.close()
     # debug data
-    print(data)
+    # print(data)
     return data
 
 
+# function that makes the graph
 def make_graph(data, args):
     plt.figure(figsize=(8, 6))
     plt.plot(data[args[0]], data[args[1]], marker='o', linestyle='none', color='blue')
@@ -209,6 +229,7 @@ class MainApp(tk.Tk):
         self.current_frame = None
         self.switch_frame(UserListPage)
 
+    # function to switch from a page to another
     def switch_frame(self, frame_class):
         new_frame = frame_class(self)
         if self.current_frame is not None:
@@ -216,6 +237,7 @@ class MainApp(tk.Tk):
         self.current_frame = new_frame
         self.current_frame.pack()
 
+    # function to switch from a page to a page that contains entries
     def switch_frameEntry(self, frame_class):
         new_frame = frame_class(self)
         if self.current_frame is not None:
@@ -229,7 +251,7 @@ class UserListPage(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
 
-        # Label
+        # Title
         label = ttk.Label(self, text="User List", font=("Helvetica", 16))
         label.pack(pady=10)
 
@@ -251,14 +273,17 @@ class UserListPage(tk.Frame):
             self, text="Select User", command=self.select_user)
         select_button.pack(pady=10)
 
+    # function to load all the names of the users
     def populate_listbox(self):
         names = fetch_names()
         for name in names:
             self.listbox.insert(tk.END, name)
 
+    # function to add a new user
     def add_user(self):
         user_name = self.new_user_entry.get()
         if user_name:  # Check if the entry is not empty
+            # creates a global variable that contains the name of the selected user, to pass for queries
             global user__name
             user__name = user_name
 
@@ -267,9 +292,11 @@ class UserListPage(tk.Frame):
             self.listbox.insert(tk.END, user_name)
             self.master.switch_frame(UserPage)
 
+    # function to select an user and move to te correct page
     def select_user(self):
         selected_name = self.listbox.get(tk.ACTIVE)
         if selected_name:
+            # creates a global variable that contains the name of the selected user, to pass for queries
             global user__name
             user__name = selected_name
             self.master.switch_frame(UserPage)
@@ -280,6 +307,7 @@ class UserPage(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
 
+        # Title 
         label = ttk.Label(self, text="Select game", font=("Helvetica", 16))
         label.pack(pady=10)
 
@@ -301,34 +329,41 @@ class UserPage(tk.Frame):
             self, text="Select Game", command=self.select_game)
         select_button.pack(pady=10)
 
+    # loads the names of the games that already have a table
     def populate_listbox(self):
         games = fetch_games()
         for game in games:
             self.listbox.insert(tk.END, game)
 
+    # moves to the correct page showing the options for data insertion or graph visualization
     def select_game(self):
         selected_game = self.listbox.get(tk.ACTIVE)
         if selected_game:
+            # creates a global variable that contains the game name to then be loaded in queries
             global game__name
             game__name = selected_game
             self.master.switch_frameEntry(GamePage)
 
+    # starts the process to reate a new game
     def add_game(self):
         game_name = self.new_user_entry.get()
         if game_name:  # Check if the entry is not empty
+            # creates a global variable that contains the game name to then be loaded in queries
             global game__name
             game__name = game_name
             self.new_user_entry.delete(0, tk.END)
             self.master.switch_frame(CreateGamePage)
 
-
+# Page 3: contains the selection to add fields to a new table containing game data
 class CreateGamePage(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
 
+        # Title
         label = ttk.Label(self, text="Create a new game",
                           font=("Helvetica", 16))
         label.pack(pady=10)
+
 
         self.checkbox_labels = []  # Store the labels of the checkboxes
         self.checkbox_vars = []
@@ -336,6 +371,7 @@ class CreateGamePage(tk.Frame):
         # Database Fields Selection
         self.create_widgets()
 
+    # function to load the checkboxes
     def create_widgets(self):
         # Options for checkboxes
         options = names_list
@@ -354,6 +390,7 @@ class CreateGamePage(tk.Frame):
         )
         check_button.pack()
 
+    # functions that checks which boxes are selected to create a table
     def check_selected(self):
         selected = [
             label
@@ -366,6 +403,7 @@ class CreateGamePage(tk.Frame):
         self.master.switch_frameEntry(GamePage)
 
 
+# Page 4: contains the options to add game data or to see the graphs
 class GamePage(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
@@ -373,11 +411,13 @@ class GamePage(tk.Frame):
         self.columns = columns
         self.entries = {}
 
+        # Title
         label = ttk.Label(self, text="Add an entry", font=("Helvetica", 16))
         label.pack(pady=10)
 
         self.create_entries()
 
+    # function that loads the entry to insert data
     def create_entries(self):
         # Define starting coordinates
         x_position = 10
@@ -407,6 +447,7 @@ class GamePage(tk.Frame):
         graph_button = tk.Button(self, text="see graphs", command=self.switch)
         graph_button.place(x=100, y=y_position + 45)
 
+    # function that prepare the data to be put in a query
     def insert_data(self):
         labels = []
         values = []
@@ -445,6 +486,7 @@ class GamePage(tk.Frame):
         self.master.switch_frame(GraphSelectPage)
 
 
+# Page 5: contains the selection of graphs that can be loaded
 class GraphSelectPage(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
@@ -454,6 +496,7 @@ class GraphSelectPage(tk.Frame):
 
         self.create_buttons()
 
+    # loads the buttons containing the graph descriptions
     def create_buttons(self):
         # Define starting coordinates
         buttons = fetch_buttons()
@@ -465,6 +508,7 @@ class GraphSelectPage(tk.Frame):
         back_button = tk.Button(self, text="back", command=self.switch)
         back_button.pack(pady=10)
 
+    # correctly sends the list of needed data to the graph depending on wich button was pressed
     def button_function(self, args):
         create_graph(args)
 
